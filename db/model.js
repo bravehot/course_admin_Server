@@ -11,10 +11,22 @@ conn.on('connected', () => {
 const userSchema = mongoose.Schema({
   username: {type: String, require: true},
   password: {type: String, require: true},
-  post: {type: String}, // 职位
-  startTime: {type: String}, // 开学时间
+  post: {type: String, default: '', trim: true}, // 职位
+  startTime: {type: String, default: '', trim: true}, // 开学时间
   classTimes: {type: Array}, // 上课时间断
   classNames: {type: Array}, // 上课班级
+  token: {type: String}, // token
 })
+
 const UserModel = mongoose.model('user', userSchema)
+
+const teacherClassInfoSchema = mongoose.Schema({
+  name: {type: String, require: true},
+  classRoom: {type: String, require: true},
+  username: {type: String, require: true},
+  week: {type: Array, require: true},
+  weeksName: {type: String, require: true}
+})
+const TeacherModel = mongoose.model('TeaClassInfo', teacherClassInfoSchema)
 exports.UserModel = UserModel
+exports.TeacherModel = TeacherModel
