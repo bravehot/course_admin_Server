@@ -3,6 +3,7 @@ var router = express.Router();
 const jwt = require('jsonwebtoken');
 const md5 = require('blueimp-md5')
 const { UserModel, TeacherModel } = require('../db/model')
+const { handleData } = require('../utils/handleData')
 // 设置token
 const setToken = (type) => {
   // 加密的 key（密钥）
@@ -203,13 +204,13 @@ router.get('/getThisWeekInfo', (req, res) => {
           })
         })
         let result = {
-          MondayInfo,
-          TuesdayInfo,
-          WednesdayInfo,
-          ThursdayInfo,
-          FridayInfo,
-          SaturdayInfo,
-          SundayInfo
+          MondayInfo: handleData(MondayInfo, 6),
+          TuesdayInfo: handleData(TuesdayInfo, 6),
+          WednesdayInfo: handleData(WednesdayInfo, 6),
+          ThursdayInfo: handleData(ThursdayInfo, 6),
+          FridayInfo: handleData(FridayInfo, 6),
+          SaturdayInfo: handleData(SaturdayInfo, 6),
+          SundayInfo: handleData(SundayInfo, 6)
         }
         res.send({code: 200, data: result, msg: 'success'})
       } else {
