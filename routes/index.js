@@ -204,13 +204,13 @@ router.get('/getThisWeekInfo', (req, res) => {
           })
         })
         let result = {
-          MondayInfo: handleData(MondayInfo, 6),
-          TuesdayInfo: handleData(TuesdayInfo, 6),
-          WednesdayInfo: handleData(WednesdayInfo, 6),
-          ThursdayInfo: handleData(ThursdayInfo, 6),
-          FridayInfo: handleData(FridayInfo, 6),
-          SaturdayInfo: handleData(SaturdayInfo, 6),
-          SundayInfo: handleData(SundayInfo, 6)
+          MondayInfo: handleData(MondayInfo, 5),
+          TuesdayInfo: handleData(TuesdayInfo, 5),
+          WednesdayInfo: handleData(WednesdayInfo, 5),
+          ThursdayInfo: handleData(ThursdayInfo, 5),
+          FridayInfo: handleData(FridayInfo, 5),
+          SaturdayInfo: handleData(SaturdayInfo, 5),
+          SundayInfo: handleData(SundayInfo, 5)
         }
         res.send({code: 200, data: result, msg: 'success'})
       } else {
