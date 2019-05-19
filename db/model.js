@@ -17,8 +17,7 @@ const userSchema = mongoose.Schema({
   classNames: {type: Array}, // 上课班级
   token: {type: String}, // token
 })
-
-const UserModel = mongoose.model('user', userSchema)
+const UserModel = mongoose.model('user', userSchema) 
 
 const teacherClassInfoSchema = mongoose.Schema({
   name: {type: String, require: true},
@@ -28,5 +27,19 @@ const teacherClassInfoSchema = mongoose.Schema({
   weeksName: {type: String, require: true}
 })
 const TeacherModel = mongoose.model('TeaClassInfo', teacherClassInfoSchema)
-exports.UserModel = UserModel
-exports.TeacherModel = TeacherModel
+
+const memoSchema = mongoose.Schema({
+  username: {type: String, require: true},
+  name: {type: String, require: true},
+  time: {type: String, require: true},
+  content: {type: String, require: true},
+  selectType: {type: Array, require: true},
+  isRemind: {type: Boolean, require: true},
+  date: {type: String, require: true},
+  isFinish: {type: Boolean, require: true},
+})
+const MemoModel = mongoose.model('memoList', memoSchema)
+
+exports.UserModel = UserModel // 用户信息
+exports.TeacherModel = TeacherModel // 用户上课信息
+exports.MemoModel = MemoModel // 用户待办事项
