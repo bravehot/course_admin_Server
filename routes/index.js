@@ -2,8 +2,49 @@ var express = require('express');
 var router = express.Router();
 const jwt = require('jsonwebtoken');
 const md5 = require('blueimp-md5')
+var schedule = require('node-schedule');
+var request = require('request')
 const { UserModel, TeacherModel, MemoModel } = require('../db/model')
 const { handleData } = require('../utils/handleData')
+let hasEvenConnect = []
+// socket 连接
+const socketConnect = (username, socketData) => {
+  let result = hasEvenConnect.length ? hasEvenConnect.some((item) => {
+    return item !== username
+  }) : true
+  if (result) {
+    if (socketData.length) {
+      let socketList = socketData.filter(item => {
+        return item.name
+      })
+      classNums = socketList.length
+    }
+    /* 
+      测试时间 30 * * * * *  每分钟的第30秒提醒
+      正常时间 30 7 1 * * *  每天7点30分提醒
+    */
+    schedule.scheduleJob('30 * * * * *', function () {
+      request.post({
+        url: 'http://rest-hangzhou.goeasy.io/publish',
+        form: {
+          appkey: 'BC-e95e600df2ac4c769a3d8105904508bc',
+          channel: 'sendClassInfo',
+          content: classNums
+        }
+      }, (error, response, body) => {
+        if (!error && response.statusCode == 200) {
+          console.log("连接成功")
+          return
+        } else {
+          console.log(error)
+          console.log('连接失败')
+        }
+      })
+    });
+  }
+  hasEvenConnect.push(username)
+}
+
 // 设置token
 const setToken = (type) => {
   // 加密的 key（密钥）
@@ -159,7 +200,6 @@ router.get('/getThisWeekInfo', (req, res) => {
         let data = teacherDoc.filter((item, index) => {
           return item.weeksName === weeksName
         })
-        console.log(data)
         if (data.length) {
           let thisWeekInfo = data // 当前周的所有课程信息
           let MondayInfo = [] // 周一
@@ -212,6 +252,33 @@ router.get('/getThisWeekInfo', (req, res) => {
               })
             })
           })
+          let week = new Date().getDay()
+          let socketData = []
+          switch (week) {
+            case 1:
+              socketData = MondayInfo
+              break;
+            case 2:
+              socketData = TuesdayInfo
+              break;
+            case 3:
+              socketData = WednesdayInfo
+              break;
+            case 4:
+              socketData = ThursdayInfo
+              break;
+            case 5:
+              socketData = FridayInfo
+              break;
+            case 6:
+              socketData = SaturdayInfo
+              break;
+            case 7:
+              socketData = SundayInfo
+              break;
+            default:
+              break;
+          }
           let result = {
             MondayInfo: handleData(MondayInfo, 5),
             TuesdayInfo: handleData(TuesdayInfo, 5),
@@ -222,8 +289,10 @@ router.get('/getThisWeekInfo', (req, res) => {
             SundayInfo: handleData(SundayInfo, 5)
           }
           res.send({ code: 200, data: result, msg: 'success' })
+          socketConnect(username, socketData)
         } else {
           res.send({ code: 400, data: [], msg: '暂无本周的上课信息' })
+          scheduleCronstyle([])
         }
       } else {
         res.send({ code: 400, msg: '暂无本周的上课信息' })
@@ -305,12 +374,12 @@ router.get('/deleteClassInfo', (req, res) => {
 // 设置需要上课班级
 router.post('/setNeedClass', (req, res) => {
   if (checkToken(req)) {
-    let {username, classNames} = req.body
-    UserModel.update({username}, {classNames}, (err, doc) => {
+    let { username, classNames } = req.body
+    UserModel.update({ username }, { classNames }, (err, doc) => {
       if (doc) {
-        res.send({code: 200, data: classNames, msg: 'success'})
+        res.send({ code: 200, data: classNames, msg: 'success' })
       } else {
-        res.send({code: 400, msg: '暂无本用户的信息'})
+        res.send({ code: 400, msg: '暂无本用户的信息' })
       }
     })
   } else {
@@ -321,21 +390,21 @@ router.post('/setNeedClass', (req, res) => {
 // 添加待办事项
 router.post('/addMemoInfo', (req, res) => {
   if (checkToken(req)) {
-    let {username, name, time, content, selectType, isRemind, date, isFinish} = req.body
-    new MemoModel({username, name, time, content, selectType, isRemind, date, isFinish}).save((err, memoDoc) => {
+    let { username, name, time, content, selectType, isRemind, date, isFinish } = req.body
+    new MemoModel({ username, name, time, content, selectType, isRemind, date, isFinish }).save((err, memoDoc) => {
       if (memoDoc) {
-        MemoModel.find({username}, (err, doc) => {
+        MemoModel.find({ username }, (err, doc) => {
           let result = doc.filter(item => {
             return item.date === date
           })
           if (result.length) {
-            res.send({code: 200, data: result,  msg: 'success'})
+            res.send({ code: 200, data: result, msg: 'success' })
           } else {
-            res.send({code: 400,  msg: '保存待办事项失败'})
+            res.send({ code: 400, msg: '保存待办事项失败' })
           }
         })
       } else {
-        res.send({code: 400, msg: '保存待办事项失败'})
+        res.send({ code: 400, msg: '保存待办事项失败' })
       }
     })
   } else {
@@ -346,19 +415,19 @@ router.post('/addMemoInfo', (req, res) => {
 // 获取当天的待办事项
 router.get('/getMemoInfo', (req, res) => {
   if (checkToken(req)) {
-    let {username, date} = req.query
-    MemoModel.find({username}, (err, Memodoc) => {
+    let { username, date } = req.query
+    MemoModel.find({ username }, (err, Memodoc) => {
       if (Memodoc) {
         let result = Memodoc.filter(item => {
           return item.date === date
         })
         if (result.length) {
-          res.send({code: 200, data: result, msg: 'success'})
+          res.send({ code: 200, data: result, msg: 'success' })
         } else {
-          res.send({code: 400, msg: '没有当天的待办事项'})
+          res.send({ code: 400, msg: '没有当天的待办事项' })
         }
       } else {
-        res.send({code: 400, msg: '没有此用户的信息'})
+        res.send({ code: 400, msg: '没有此用户的信息' })
       }
     })
   } else {
@@ -369,12 +438,12 @@ router.get('/getMemoInfo', (req, res) => {
 // 更新待办事项
 router.post('/updateMemoInfo', (req, res) => {
   if (checkToken(req)) {
-    let {username, name, time, content, selectType, isRemind, date, isFinish, _id} = req.body
-    MemoModel.findByIdAndUpdate({_id}, {name, time, content, selectType, isRemind, date, isFinish}, (err, memoDoc) => {
+    let { username, name, time, content, selectType, isRemind, date, isFinish, _id } = req.body
+    MemoModel.findByIdAndUpdate({ _id }, { name, time, content, selectType, isRemind, date, isFinish }, (err, memoDoc) => {
       if (memoDoc) {
-        res.send({code: 200, data: [], msg: 'success'})
+        res.send({ code: 200, data: [], msg: 'success' })
       } else {
-        res.send({code: 400, msg: '更新失败，请稍后再试！'})
+        res.send({ code: 400, msg: '更新失败，请稍后再试！' })
       }
     })
   } else {
@@ -385,8 +454,8 @@ router.post('/updateMemoInfo', (req, res) => {
 // 删除当前的待办事项
 router.get('/deleteThisMemo', (req, res) => {
   if (checkToken(req)) {
-    let {id} = req.query
-    MemoModel.findByIdAndRemove({_id: id}, (err, memoDoc) => {
+    let { id } = req.query
+    MemoModel.findByIdAndRemove({ _id: id }, (err, memoDoc) => {
       if (memoDoc) {
         res.send({ code: 200, data: [], msg: 'success' })
       } else {
@@ -401,10 +470,10 @@ router.get('/deleteThisMemo', (req, res) => {
 // 将当前事项设置为已完成
 router.get('/setMemoFinish', (req, res) => {
   if (checkToken(req)) {
-    let {id, isFinish} = req.query
-    MemoModel.findByIdAndUpdate({_id: id}, {isFinish}, (err, memoDoc) => {
+    let { id, isFinish } = req.query
+    MemoModel.findByIdAndUpdate({ _id: id }, { isFinish }, (err, memoDoc) => {
       if (memoDoc) {
-        res.send({ code: 200, data: [], msg: 'success'  })
+        res.send({ code: 200, data: [], msg: 'success' })
       } else {
         res.send({ code: 400, msg: '设置失败，请稍后再试' })
       }
